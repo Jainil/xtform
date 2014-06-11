@@ -99,6 +99,8 @@
             errString = errString.replace('{{' + bound + '}}', bounds[bound]);
           }
           errors += errString + '<br>';
+        }else if('serverError' == prop && ngModel.$error[prop]){
+            errors += ngModel['serverError'] + '<br>';
         }
       }
 
@@ -250,6 +252,15 @@
               control.validate = function () {
                 validate.apply(that, arguments);
               };
+                control.serverError = function (error) {
+                    for(var key in error){
+                        if(formCtrl[key]){
+                            formCtrl[key].$setValidity('serverError', false);
+                            formCtrl[key]['serverError'] = error[key];
+                        }
+                    }
+                    xtFormCtrl.validators.showAllErrors();
+                };
             }
           }
 
@@ -260,10 +271,6 @@
             return false;
           });
 
-          element.on('$destroy', function () {
-            xtFormCtrl.$element = null;
-            xtFormCtrl.validators = null;
-          });
         }
       };
     }])
@@ -284,14 +291,15 @@
         if (element.is('select') && attrs.placement === undefined) {
           attrs.placement = 'top';
         }
-
+          scope.$watch(function () {
+              return ngModel.$viewValue
+          }, function (v) {
+              if(ngModel.$error['serverError']){
+                  ngModel.$setValidity('serverError', true);
+              }
+          });
         var validator = new InputValidator(scope, element, attrs, ngModel, formCtrl);
         xtFormCtrl.validators.registerValidator(attrs.name, validator);
-        element.on('$destroy', function() {
-          if (xtFormCtrl.validators.hasValidator(attrs.name)) {
-            xtFormCtrl.validators.deregisterValidator(attrs.name);
-          }
-        });
       }
     };
   });
